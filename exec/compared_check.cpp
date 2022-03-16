@@ -34,6 +34,7 @@
 #include "conclog/include/logging.hpp"
 #include "conclog/include/progress_indicator.hpp"
 #include "command_line_interface.hpp"
+#include "scenario_utility.hpp"
 
 using namespace Opera;
 using namespace ConcLog;
@@ -47,8 +48,8 @@ class ScenarioCheck {
 
     void present_bodies(BrokerAccess const& access) {
 
-        BodyPresentationMessage rp = Deserialiser<BodyPresentationMessage>(Resources::path("json/scenarios/"+scenario_t+"/robot/presentation.json")).make();
-        BodyPresentationMessage hp = Deserialiser<BodyPresentationMessage>(Resources::path("json/scenarios/"+scenario_t+"/human/presentation.json")).make();
+        BodyPresentationMessage rp = Deserialiser<BodyPresentationMessage>(ScenarioResources::path(scenario_t+"/robot/presentation.json")).make();
+        BodyPresentationMessage hp = Deserialiser<BodyPresentationMessage>(ScenarioResources::path(scenario_t+"/human/presentation.json")).make();
 
         auto bp_publisher = access.make_body_presentation_publisher();
         bp_publisher->put(rp);
@@ -63,7 +64,7 @@ class ScenarioCheck {
         List<BodyStateMessage> robot_messages;
         SizeType robot_idx = 0;
         while (true) {
-            auto filepath = Resources::path("json/scenarios/"+scenario_t+"/robot/"+scenario_k+"/"+std::to_string(robot_idx++)+".json");
+            auto filepath = ScenarioResources::path(scenario_t+"/robot/"+scenario_k+"/"+std::to_string(robot_idx++)+".json");
             if (not exists(filepath)) break;
             robot_messages.push_back(Deserialiser<BodyStateMessage>(filepath).make());
         }
@@ -71,7 +72,7 @@ class ScenarioCheck {
         List<BodyStateMessage> human_messages;
         SizeType human_idx = 0;
         while (true) {
-            auto filepath = Resources::path("json/scenarios/"+scenario_t+"/human/"+scenario_k+"/"+std::to_string(human_idx++)+".json");
+            auto filepath = ScenarioResources::path(scenario_t+"/human/"+scenario_k+"/"+std::to_string(human_idx++)+".json");
             if (not exists(filepath)) break;
             human_messages.push_back(Deserialiser<BodyStateMessage>(filepath).make());
         }

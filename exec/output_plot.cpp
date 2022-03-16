@@ -27,7 +27,7 @@
  */
 
 #include "thread.hpp"
-#include "utility.hpp"
+#include "scenario_utility.hpp"
 #include "message.hpp"
 #include "deserialisation.hpp"
 #include "mqtt.hpp"
@@ -43,12 +43,12 @@ using namespace ConcLog;
 void aggregate_collision_packets(String const& scenario_t, String const& scenario_k, SizeType const human_segment_to_focus, SizeType const robot_segment_to_focus) {
 
     SizeType num_samples = 0;
-    TimestampType initial_time = Deserialiser<BodyStateMessage>(Resources::path("json/scenarios/"+scenario_t+"/human/"+scenario_k+"/0.json")).make().timestamp();
+    TimestampType initial_time = Deserialiser<BodyStateMessage>(ScenarioResources::path(scenario_t+"/human/"+scenario_k+"/0.json")).make().timestamp();
     while (true) {
-        auto filepath = Resources::path("json/scenarios/"+scenario_t+"/human/"+scenario_k+"/" + std::to_string(++num_samples) + ".json");
+        auto filepath = ScenarioResources::path(scenario_t+"/human/"+scenario_k+"/" + std::to_string(++num_samples) + ".json");
         if (not exists(filepath)) break;
     }
-    TimestampType final_time = Deserialiser<BodyStateMessage>(Resources::path("json/scenarios/"+scenario_t+"/human/"+scenario_k+"/"+std::to_string(num_samples-1)+".json")).make().timestamp();
+    TimestampType final_time = Deserialiser<BodyStateMessage>(ScenarioResources::path(scenario_t+"/human/"+scenario_k+"/"+std::to_string(num_samples-1)+".json")).make().timestamp();
 
     List<CollisionNotificationMessage> collisions;
     SizeType file = 0;

@@ -27,7 +27,7 @@
  */
 
 #include "thread.hpp"
-#include "utility.hpp"
+#include "scenario_utility.hpp"
 #include "message.hpp"
 #include "deserialisation.hpp"
 #include "mqtt.hpp"
@@ -42,7 +42,7 @@ using namespace ConcLog;
 
 void acquire_human_scenario_samples(String const& scenario_t, String const& scenario_k) {
     CONCLOG_SCOPE_CREATE
-    BodyPresentationMessage p0 = Deserialiser<BodyPresentationMessage>(Resources::path("json/scenarios/"+scenario_t+"/human/presentation.json")).make();
+    BodyPresentationMessage p0 = Deserialiser<BodyPresentationMessage>(ScenarioResources::path(scenario_t+"/human/presentation.json")).make();
     Human human(p0.id(),p0.point_ids(),p0.thicknesses());
     OPERA_ASSERT_EQUAL(human.num_points(),18)
 
@@ -50,7 +50,7 @@ void acquire_human_scenario_samples(String const& scenario_t, String const& scen
     List<BodyStateMessage> human_messages;
     while (true) {
         CONCLOG_PRINTLN_VAR(file)
-        auto filepath = Resources::path("json/scenarios/"+scenario_t+"/human/"+scenario_k+"/" + std::to_string(file++) + ".json");
+        auto filepath = ScenarioResources::path(scenario_t+"/human/"+scenario_k+"/" + std::to_string(file++) + ".json");
         if (not exists(filepath)) break;
         human_messages.push_back(Deserialiser<BodyStateMessage>(filepath).make());
     }
@@ -63,7 +63,7 @@ void acquire_human_scenario_samples(String const& scenario_t, String const& scen
 
 void acquire_robot_scenario_samples(String const& scenario_t, String const& scenario_k) {
     CONCLOG_SCOPE_CREATE
-    BodyPresentationMessage p0 = Deserialiser<BodyPresentationMessage>(Resources::path("json/scenarios/"+scenario_t+"/robot/presentation.json")).make();
+    BodyPresentationMessage p0 = Deserialiser<BodyPresentationMessage>(ScenarioResources::path(scenario_t+"/robot/presentation.json")).make();
     Robot robot(p0.id(),p0.message_frequency(),p0.point_ids(),p0.thicknesses());
     OPERA_ASSERT_EQUAL(robot.num_points(),9)
 
@@ -72,7 +72,7 @@ void acquire_robot_scenario_samples(String const& scenario_t, String const& scen
     TimestampType current_timestamp = 0;
     while (true) {
         CONCLOG_PRINTLN_VAR(file)
-        auto filepath = Resources::path("json/scenarios/"+scenario_t+"/robot/"+scenario_k+"/"+std::to_string(file++)+".json");
+        auto filepath = ScenarioResources::path(scenario_t+"/robot/"+scenario_k+"/"+std::to_string(file++)+".json");
         if (not exists(filepath)) break;
         auto pkt = Deserialiser<BodyStateMessage>(filepath).make();
         OPERA_ASSERT(pkt.timestamp() > current_timestamp)

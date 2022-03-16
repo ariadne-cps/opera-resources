@@ -1,2 +1,5 @@
 build*
+cmake-build*
+include/scenarios_config.hpp
 .DS_Store
+.idea

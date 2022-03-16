@@ -27,7 +27,7 @@
  */
 
 #include "thread.hpp"
-#include "utility.hpp"
+#include "scenario_utility.hpp"
 #include "message.hpp"
 #include "deserialisation.hpp"
 #include "mqtt.hpp"
@@ -41,7 +41,7 @@ using namespace Opera;
 using namespace ConcLog;
 
 void plot_samples(String const& scenario_t, String const& scenario_k, SizeType const& human_keypoint, SizeType const& robot_keypoint) {
-    BodyPresentationMessage p0 = Deserialiser<BodyPresentationMessage>(Resources::path("json/scenarios/"+scenario_t+"/human/presentation.json")).make();
+    BodyPresentationMessage p0 = Deserialiser<BodyPresentationMessage>(ScenarioResources::path(scenario_t+"/human/presentation.json")).make();
     Human human(p0.id(),p0.point_ids(),p0.thicknesses());
     OPERA_ASSERT_EQUAL(human.num_points(),18)
 
@@ -50,7 +50,7 @@ void plot_samples(String const& scenario_t, String const& scenario_k, SizeType c
     SizeType file = 0;
     List<BodyStateMessage> human_messages;
     while (true) {
-        auto filepath = Resources::path("json/scenarios/"+scenario_t+"/human/"+scenario_k+"/" + std::to_string(file++) + ".json");
+        auto filepath = ScenarioResources::path(scenario_t+"/human/"+scenario_k+"/" + std::to_string(file++) + ".json");
         if (not exists(filepath)) break;
         auto msg = Deserialiser<BodyStateMessage>(filepath).make();
         human_messages.push_back(msg);
@@ -59,7 +59,7 @@ void plot_samples(String const& scenario_t, String const& scenario_k, SizeType c
     file = 0;
     List<BodyStateMessage> robot_messages;
     while (true) {
-        auto filepath = Resources::path("json/scenarios/"+scenario_t+"/robot/"+scenario_k+"/"+std::to_string(file++)+".json");
+        auto filepath = ScenarioResources::path(scenario_t+"/robot/"+scenario_k+"/"+std::to_string(file++)+".json");
         if (not exists(filepath)) break;
         robot_messages.push_back(Deserialiser<BodyStateMessage>(filepath).make());
     }

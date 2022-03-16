@@ -27,7 +27,7 @@
  */
 
 #include "thread.hpp"
-#include "utility.hpp"
+#include "scenario_utility.hpp"
 #include "message.hpp"
 #include "deserialisation.hpp"
 #include "mqtt.hpp"
@@ -40,8 +40,8 @@ using namespace Opera;
 
 void process(BrokerAccess const& access, String const& scenario_t, String const& scenario_k, SizeType const& speedup, SizeType const& concurrency, LookAheadJobFactory const& job_factory) {
 
-    BodyPresentationMessage rp = Deserialiser<BodyPresentationMessage>(Resources::path("json/scenarios/"+scenario_t+"/robot/presentation.json")).make();
-    BodyPresentationMessage hp = Deserialiser<BodyPresentationMessage>(Resources::path("json/scenarios/"+scenario_t+"/human/presentation.json")).make();
+    BodyPresentationMessage rp = Deserialiser<BodyPresentationMessage>(ScenarioResources::path(scenario_t+"/robot/presentation.json")).make();
+    BodyPresentationMessage hp = Deserialiser<BodyPresentationMessage>(ScenarioResources::path(scenario_t+"/human/presentation.json")).make();
 
     Runtime runtime(access, job_factory, concurrency);
 
@@ -56,13 +56,13 @@ void process(BrokerAccess const& access, String const& scenario_t, String const&
     std::this_thread::sleep_for(std::chrono::milliseconds (10));
     delete bp_publisher;
 
-    auto first_human_state = Deserialiser<BodyStateMessage>(Resources::path("json/scenarios/"+scenario_t+"/human/"+scenario_k+"/0.json")).make();
+    auto first_human_state = Deserialiser<BodyStateMessage>(ScenarioResources::path(scenario_t+"/human/"+scenario_k+"/0.json")).make();
     auto sync_timestamp = first_human_state.timestamp();
 
     auto bs_publisher = access.make_body_state_publisher();
     SizeType idx = 0;
     while (true) {
-        auto filepath = Resources::path("json/scenarios/"+scenario_t+"/robot/"+scenario_k+"/"+std::to_string(idx++)+".json");
+        auto filepath = ScenarioResources::path(scenario_t+"/robot/"+scenario_k+"/"+std::to_string(idx++)+".json");
         if (not exists(filepath)) break;
         auto msg = Deserialiser<BodyStateMessage>(filepath).make();
         if (msg.timestamp() > sync_timestamp) {
@@ -80,7 +80,7 @@ void process(BrokerAccess const& access, String const& scenario_t, String const&
 
     std::deque<BodyStateMessage> robot_messages;
     while (true) {
-        auto filepath = Resources::path("json/scenarios/"+scenario_t+"/robot/"+scenario_k+"/"+std::to_string(idx++)+".json");
+        auto filepath = ScenarioResources::path(scenario_t+"/robot/"+scenario_k+"/"+std::to_string(idx++)+".json");
         if (not exists(filepath)) break;
         robot_messages.push_back(Deserialiser<BodyStateMessage>(filepath).make());
     }
@@ -88,7 +88,7 @@ void process(BrokerAccess const& access, String const& scenario_t, String const&
     std::deque<BodyStateMessage> human_messages;
     SizeType human_idx = 0;
     while (true) {
-        auto filepath = Resources::path("json/scenarios/"+scenario_t+"/human/"+scenario_k+"/"+std::to_string(human_idx++)+".json");
+        auto filepath = ScenarioResources::path(scenario_t+"/human/"+scenario_k+"/"+std::to_string(human_idx++)+".json");
         if (not exists(filepath)) break;
         human_messages.push_back(Deserialiser<BodyStateMessage>(filepath).make());
     }
