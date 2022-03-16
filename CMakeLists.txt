@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.11)
+cmake_minimum_required(VERSION 3.9)
 
 project(OperaScenarios VERSION 1.0)
 
@@ -25,7 +25,7 @@ else()
     set(LIBRARY_KIND SHARED)	
 endif()
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/opera/cmake")
 set(CMAKE_MACOSX_RPATH 1)
 set(BUILD_SHARED_LIBS ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -43,7 +43,7 @@ else()
     add_compile_options(/WX)
 endif()
 
-include_directories(SYSTEM ${PROJECT_SOURCE_DIR}/opera/include ${mqtt_INCLUDE_DIR} ${RAPIDJSON_INCLUDEDIR})
+include_directories(SYSTEM ${PROJECT_SOURCE_DIR}/opera/include ${PROJECT_SOURCE_DIR}/opera/dependencies ${mqtt_INCLUDE_DIR} ${RAPIDJSON_INCLUDEDIR}) 
 
 add_subdirectory(opera)
 add_subdirectory(exec)
