@@ -124,9 +124,9 @@ void aggregate_collision_packets(String const& scenario_t, String const& scenari
 int main(int argc, const char* argv[])
 {
     if (not CommandLineInterface::instance().acquire(argc,argv)) return -1;
-    String const scenario_t = "static";
-    String const scenario_k = "long_l";
-    SizeType const human_segment = 1;
+    String const scenario_t = "dynamic";
+    String const scenario_k = "quadrants";
+    SizeType const human_segment = 2;
     SizeType const robot_segment = 7;
     aggregate_collision_packets(scenario_t,scenario_k,human_segment,robot_segment);
 }

@@ -172,7 +172,7 @@ class ProfileScenario : public Profiler {
 
         std::cout << "<" << scenario_t << "/" << scenario_k << ">" << std::endl;
 
-        ReuseLookAheadJobFactory reuse_factory(KeepOneMinimumDistanceBarrierSequenceUpdatePolicy(),ReuseEquivalence::STRONG);
+        ReuseLookAheadJobFactory reuse_factory(AddWhenDifferentMinimumDistanceBarrierSequenceUpdatePolicy(),ReuseEquivalence::STRONG);
         auto discard_cnt = profile_sequential("not using reuse", DiscardLookAheadJobFactory(), state_messages);
         auto reuse_cnt = profile_sequential("using reuse", reuse_factory, state_messages);
 
@@ -188,7 +188,8 @@ int main(int argc, const char* argv[])
     if (not CommandLineInterface::instance().acquire(argc,argv)) return -1;
     Logger::instance().configuration().set_thread_name_printing_policy(ThreadNamePrintingPolicy::BEFORE);
     Logger::instance().use_blocking_scheduler();
-    String const scenario_t = "static";
-    String const scenario_k = "short_l";
+    String const scenario_t = "dynamic";
+    String const scenario_k = "quadrants";
     ProfileScenario(scenario_t,scenario_k).run();
+
 }

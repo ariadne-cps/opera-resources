@@ -133,14 +133,14 @@ int main(int argc, const char* argv[])
 {
     if (not CommandLineInterface::instance().acquire(argc,argv)) return -1;
     Logger::instance().configuration().set_thread_name_printing_policy(ThreadNamePrintingPolicy::BEFORE);
-    String const scenario_t = "static";
-    String const scenario_k = "long_l";
+    String const scenario_t = "dynamic";
+    String const scenario_k = "quadrants";
     SizeType const speedup = 1;
     SizeType const concurrency = 16;
     BrokerAccess access = MemoryBrokerAccess();
     //BrokerAccess access = MqttBrokerAccess("localhost",1883);
     //LookAheadJobFactory job_factory = DiscardLookAheadJobFactory();
-    LookAheadJobFactory job_factory = ReuseLookAheadJobFactory(KeepOneMinimumDistanceBarrierSequenceUpdatePolicy(),ReuseEquivalence::STRONG);
+    LookAheadJobFactory job_factory = ReuseLookAheadJobFactory(AddWhenDifferentMinimumDistanceBarrierSequenceUpdatePolicy(),ReuseEquivalence::STRONG);
 
     process(access,scenario_t,scenario_k,speedup,concurrency,job_factory);
 }
