@@ -43,31 +43,30 @@ using namespace ConcLog;
 void acquire_human_scenario_samples(String const& scenario_t, String const& scenario_k) {
     CONCLOG_SCOPE_CREATE
     BodyPresentationMessage p0 = Deserialiser<BodyPresentationMessage>(ScenarioResources::path(scenario_t+"/human/presentation.json")).make();
-    CONCLOG_PRINTLN_VAR(p0.segment_pairs().size())
-    CONCLOG_PRINTLN_VAR(p0.thicknesses().size())
     Human human(p0.id(),p0.segment_pairs(),p0.thicknesses());
-    OPERA_ASSERT_EQUAL(human.num_points(),18)
-
+    OPERA_ASSERT_EQUAL(human.num_points(),16)
     SizeType file = 0;
-    List<BodyStateMessage> human_messages;
+    List<HumanStateMessage> human_messages;
     while (true) {
-        CONCLOG_PRINTLN_VAR(file)
+        CONCLOG_PRINTLN("Acquiring file for message " << file)
         auto filepath = ScenarioResources::path(scenario_t+"/human/"+scenario_k+"/" + std::to_string(file++) + ".json");
         if (not exists(filepath)) break;
-        human_messages.push_back(Deserialiser<BodyStateMessage>(filepath).make());
+        auto deserialiser = Deserialiser<HumanStateMessage>(filepath);
+        human_messages.push_back(deserialiser.make());
     }
 
     List<HumanStateInstance> instances;
     for (auto pkt: human_messages) {
-        instances.emplace_back(human, pkt.points(), pkt.timestamp());
+        CONCLOG_PRINTLN("Creating instance for message " << instances.size())
+        instances.emplace_back(human, pkt.bodies().at(0).second, pkt.timestamp());
     }
 }
 
 void acquire_robot_scenario_samples(String const& scenario_t, String const& scenario_k) {
     CONCLOG_SCOPE_CREATE
     BodyPresentationMessage p0 = Deserialiser<BodyPresentationMessage>(ScenarioResources::path(scenario_t+"/robot/presentation.json")).make();
-    Robot robot(p0.id(),p0.message_frequency(),p0.point_ids(),p0.thicknesses());
-    OPERA_ASSERT_EQUAL(robot.num_points(),9)
+    Robot robot(p0.id(),p0.message_frequency(),p0.segment_pairs(),p0.thicknesses());
+    OPERA_ASSERT_EQUAL(robot.num_points(),8)
 
     SizeType file = 0;
     RobotStateHistory history(robot);
@@ -76,10 +75,13 @@ void acquire_robot_scenario_samples(String const& scenario_t, String const& scen
         CONCLOG_PRINTLN_VAR(file)
         auto filepath = ScenarioResources::path(scenario_t+"/robot/"+scenario_k+"/"+std::to_string(file++)+".json");
         if (not exists(filepath)) break;
-        auto pkt = Deserialiser<BodyStateMessage>(filepath).make();
+        auto pkt = Deserialiser<RobotStateMessage>(filepath).make();
         OPERA_ASSERT(pkt.timestamp() > current_timestamp)
         current_timestamp = pkt.timestamp();
-        history.acquire(pkt.mode(),pkt.points(),pkt.timestamp());
+        Map<KeypointIdType,List<Point>> points;
+        for (SizeType i=0;i<robot.num_points();++i)
+            points.insert(make_pair(to_string(i),pkt.points()[i]));
+        history.acquire(pkt.mode(),points,pkt.timestamp());
     }
 }
 
