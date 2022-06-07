@@ -43,7 +43,9 @@ using namespace ConcLog;
 void acquire_human_scenario_samples(String const& scenario_t, String const& scenario_k) {
     CONCLOG_SCOPE_CREATE
     BodyPresentationMessage p0 = Deserialiser<BodyPresentationMessage>(ScenarioResources::path(scenario_t+"/human/presentation.json")).make();
-    Human human(p0.id(),p0.point_ids(),p0.thicknesses());
+    CONCLOG_PRINTLN_VAR(p0.segment_pairs().size())
+    CONCLOG_PRINTLN_VAR(p0.thicknesses().size())
+    Human human(p0.id(),p0.segment_pairs(),p0.thicknesses());
     OPERA_ASSERT_EQUAL(human.num_points(),18)
 
     SizeType file = 0;
@@ -85,7 +87,7 @@ int main(int argc, const char* argv[])
 {
     if (not CommandLineInterface::instance().acquire(argc,argv)) return -1;
     String const scenario_t = "static";
-    String const scenario_k = "long_l";
+    String const scenario_k = "long_r";
     CONCLOG_PRINTLN("Acquiring human scenario samples")
     acquire_human_scenario_samples(scenario_t,scenario_k);
     CONCLOG_PRINTLN("Acquiring robot scenario samples")
