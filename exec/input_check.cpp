@@ -66,7 +66,7 @@ void acquire_robot_scenario_samples(String const& scenario_t, String const& scen
     CONCLOG_SCOPE_CREATE
     BodyPresentationMessage p0 = Deserialiser<BodyPresentationMessage>(ScenarioResources::path(scenario_t+"/robot/presentation.json")).make();
     Robot robot(p0.id(),p0.message_frequency(),p0.segment_pairs(),p0.thicknesses());
-    OPERA_ASSERT_EQUAL(robot.num_points(),8)
+    OPERA_ASSERT_EQUAL(robot.num_points(),9)
 
     SizeType file = 0;
     RobotStateHistory history(robot);
