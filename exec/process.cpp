@@ -1,5 +1,5 @@
 /***************************************************************************
- *            scenario_process.cpp
+ *            process.cpp
  *
  *  Copyright  2021  Luca Geretti
  *
@@ -56,45 +56,45 @@ void process(BrokerAccess const& access, String const& scenario_t, String const&
     std::this_thread::sleep_for(std::chrono::milliseconds (10));
     delete bp_publisher;
 
-    auto first_human_state = Deserialiser<BodyStateMessage>(ScenarioResources::path(scenario_t+"/human/"+scenario_k+"/0.json")).make();
+    auto first_human_state = Deserialiser<HumanStateMessage>(ScenarioResources::path(scenario_t+"/human/"+scenario_k+"/0.json")).make();
     auto sync_timestamp = first_human_state.timestamp();
 
-    auto bs_publisher = access.make_body_state_publisher();
+    auto rs_publisher = access.make_robot_state_publisher();
     SizeType idx = 0;
     while (true) {
         auto filepath = ScenarioResources::path(scenario_t+"/robot/"+scenario_k+"/"+std::to_string(idx++)+".json");
         if (not exists(filepath)) break;
-        auto msg = Deserialiser<BodyStateMessage>(filepath).make();
+        auto msg = Deserialiser<RobotStateMessage>(filepath).make();
         if (msg.timestamp() > sync_timestamp) {
             --idx;
             break;
         }
-        bs_publisher->put(msg);
+        rs_publisher->put(msg);
     }
     std::this_thread::sleep_for(std::chrono::milliseconds (10));
-    delete bs_publisher;
+    delete rs_publisher;
 
     CONCLOG_PRINTLN("Robot messages inserted up to sync timestamp of " << sync_timestamp << " at message #" << idx)
 
     std::this_thread::sleep_for(std::chrono::milliseconds (10));
 
-    std::deque<BodyStateMessage> robot_messages;
+    std::deque<RobotStateMessage> robot_messages;
     while (true) {
         auto filepath = ScenarioResources::path(scenario_t+"/robot/"+scenario_k+"/"+std::to_string(idx++)+".json");
         if (not exists(filepath)) break;
-        robot_messages.push_back(Deserialiser<BodyStateMessage>(filepath).make());
+        robot_messages.push_back(Deserialiser<RobotStateMessage>(filepath).make());
     }
 
-    std::deque<BodyStateMessage> human_messages;
+    std::deque<HumanStateMessage> human_messages;
     SizeType human_idx = 0;
     while (true) {
         auto filepath = ScenarioResources::path(scenario_t+"/human/"+scenario_k+"/"+std::to_string(human_idx++)+".json");
         if (not exists(filepath)) break;
-        human_messages.push_back(Deserialiser<BodyStateMessage>(filepath).make());
+        human_messages.push_back(Deserialiser<HumanStateMessage>(filepath).make());
     }
 
     Thread human_production([&]{
-        auto* publisher = access.make_body_state_publisher();
+        auto* publisher = access.make_human_state_publisher();
         while (not human_messages.empty()) {
             auto& p = human_messages.front();
             publisher->put(p);
@@ -105,7 +105,7 @@ void process(BrokerAccess const& access, String const& scenario_t, String const&
     },"hu_p");
 
     Thread robot_production([&]{
-        auto* publisher = access.make_body_state_publisher();
+        auto* publisher = access.make_robot_state_publisher();
         while (not robot_messages.empty()) {
             auto& p = robot_messages.front();
             publisher->put(p);
@@ -133,9 +133,9 @@ int main(int argc, const char* argv[])
 {
     if (not CommandLineInterface::instance().acquire(argc,argv)) return -1;
     Logger::instance().configuration().set_thread_name_printing_policy(ThreadNamePrintingPolicy::BEFORE);
-    String const scenario_t = "dynamic";
-    String const scenario_k = "quadrants";
-    SizeType const speedup = 1;
+    String const scenario_t = "static";
+    String const scenario_k = "long_r";
+    SizeType const speedup = 100;
     SizeType const concurrency = 16;
     BrokerAccess access = MemoryBrokerAccess();
     //BrokerAccess access = MqttBrokerAccess("localhost",1883);
