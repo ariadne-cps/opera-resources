@@ -30,6 +30,7 @@
 #include "scenario_utility.hpp"
 #include "message.hpp"
 #include "deserialisation.hpp"
+#include "kafka.hpp"
 #include "mqtt.hpp"
 #include "memory.hpp"
 #include "conclog/include/logging.hpp"
@@ -51,9 +52,10 @@ void process(BrokerAccess const& access, String const& scenario_t, String const&
     });
 
     auto bp_publisher = access.make_body_presentation_publisher();
+    std::this_thread::sleep_for(std::chrono::milliseconds (1000));
     bp_publisher->put(rp);
     bp_publisher->put(hp);
-    std::this_thread::sleep_for(std::chrono::milliseconds (10));
+    std::this_thread::sleep_for(std::chrono::milliseconds (1000));
     delete bp_publisher;
 
     auto first_human_state = Deserialiser<HumanStateMessage>(ScenarioResources::path(scenario_t+"/human/"+scenario_k+"/0.json")).make();
@@ -71,7 +73,7 @@ void process(BrokerAccess const& access, String const& scenario_t, String const&
         }
         rs_publisher->put(msg);
     }
-    std::this_thread::sleep_for(std::chrono::milliseconds (10));
+    std::this_thread::sleep_for(std::chrono::milliseconds (1000));
     delete rs_publisher;
 
     CONCLOG_PRINTLN("Robot messages inserted up to sync timestamp of " << sync_timestamp << " at message #" << idx)
@@ -135,10 +137,11 @@ int main(int argc, const char* argv[])
     Logger::instance().configuration().set_thread_name_printing_policy(ThreadNamePrintingPolicy::BEFORE);
     String const scenario_t = "static";
     String const scenario_k = "long_r";
-    SizeType const speedup = 100;
+    SizeType const speedup = 1;
     SizeType const concurrency = 16;
-    BrokerAccess access = MemoryBrokerAccess();
+    //BrokerAccess access = MemoryBrokerAccess();
     //BrokerAccess access = MqttBrokerAccess("localhost",1883);
+    BrokerAccess access = KafkaBrokerAccess(0,"localhost",RdKafka::Topic::OFFSET_END);
     //LookAheadJobFactory job_factory = DiscardLookAheadJobFactory();
     LookAheadJobFactory job_factory = ReuseLookAheadJobFactory(AddWhenDifferentMinimumDistanceBarrierSequenceUpdatePolicy(),ReuseEquivalence::STRONG);
 
