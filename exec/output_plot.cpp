@@ -1,5 +1,5 @@
 /***************************************************************************
- *            scenario_output_plot.cpp
+ *            output_plot.cpp
  *
  *  Copyright  2021  Luca Geretti
  *
@@ -40,15 +40,15 @@
 using namespace Opera;
 using namespace ConcLog;
 
-void aggregate_collision_packets(String const& scenario_t, String const& scenario_k, SizeType const human_segment_to_focus, SizeType const robot_segment_to_focus) {
+void aggregate_collision_packets(String const& scenario_t, String const& scenario_k, Pair<KeypointIdType,KeypointIdType> const& human_segment_to_focus, Pair<KeypointIdType,KeypointIdType> const& robot_segment_to_focus) {
 
     SizeType num_samples = 0;
-    TimestampType initial_time = Deserialiser<BodyStateMessage>(ScenarioResources::path(scenario_t+"/human/"+scenario_k+"/0.json")).make().timestamp();
+    TimestampType initial_time = Deserialiser<HumanStateMessage>(ScenarioResources::path(scenario_t+"/human/"+scenario_k+"/0.json")).make().timestamp();
     while (true) {
         auto filepath = ScenarioResources::path(scenario_t+"/human/"+scenario_k+"/" + std::to_string(++num_samples) + ".json");
         if (not exists(filepath)) break;
     }
-    TimestampType final_time = Deserialiser<BodyStateMessage>(ScenarioResources::path(scenario_t+"/human/"+scenario_k+"/"+std::to_string(num_samples-1)+".json")).make().timestamp();
+    TimestampType final_time = Deserialiser<HumanStateMessage>(ScenarioResources::path(scenario_t+"/human/"+scenario_k+"/"+std::to_string(num_samples-1)+".json")).make().timestamp();
 
     List<CollisionNotificationMessage> collisions;
     SizeType file = 0;
@@ -73,10 +73,11 @@ void aggregate_collision_packets(String const& scenario_t, String const& scenari
     for (SizeType i=0; i < num_samples; ++i) {
         FloatType lower_bound = std::numeric_limits<FloatType>::max();
         FloatType upper_bound = 0;
-        Set<SizeType> human_segments;
+        Set<Pair<KeypointIdType,KeypointIdType>> human_segments;
         TimestampType interval_time_bound = initial_time + time_interval*(i+1);
         while (idx < collisions.size() and collisions.at(idx).current_time() < interval_time_bound) {
-            if (collisions.at(idx).human_segment_id() == human_segment_to_focus and collisions.at(idx).robot_segment_id() == robot_segment_to_focus) {
+            if (collisions.at(idx).human_segment_id() == human_segment_to_focus and
+                collisions.at(idx).robot_segment_id() == robot_segment_to_focus) {
                 CONCLOG_PRINTLN("segment processed with segment_distance " << collisions.at(idx).collision_distance())
                 auto const& c = collisions.at(idx);
                 lower_bound = std::min(lower_bound,static_cast<FloatType>(c.collision_distance().lower())/1e9);
@@ -96,7 +97,7 @@ void aggregate_collision_packets(String const& scenario_t, String const& scenari
     CONCLOG_PRINTLN("Acquired all collision bounds and number of different segments for each interval")
 
     std::ofstream output;
-    output.open("scenario_" + scenario_t + "_" + scenario_k + "_collisions_" + to_string(human_segment_to_focus) + "_" + to_string(robot_segment_to_focus) + ".m");
+    output.open(scenario_t + "_" + scenario_k + "_" + to_string(human_segment_to_focus.first) + "_" + to_string(human_segment_to_focus.second) + "_" + to_string(robot_segment_to_focus.first) + "_" + to_string(robot_segment_to_focus.second) + ".m");
     output << "figure(1);\n";
 
     output << "x = [";
@@ -124,9 +125,9 @@ void aggregate_collision_packets(String const& scenario_t, String const& scenari
 int main(int argc, const char* argv[])
 {
     if (not CommandLineInterface::instance().acquire(argc,argv)) return -1;
-    String const scenario_t = "dynamic";
-    String const scenario_k = "quadrants";
-    SizeType const human_segment = 2;
-    SizeType const robot_segment = 7;
+    String const scenario_t = "static";
+    String const scenario_k = "long_r";
+    Pair<KeypointIdType,KeypointIdType> const human_segment = {"right_wrist","right_wrist"};
+    Pair<KeypointIdType,KeypointIdType> const robot_segment = {"7","8"};
     aggregate_collision_packets(scenario_t,scenario_k,human_segment,robot_segment);
 }
