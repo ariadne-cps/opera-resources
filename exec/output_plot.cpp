@@ -76,13 +76,13 @@ void aggregate_collision_packets(String const& scenario_t, String const& scenari
         Set<Pair<KeypointIdType,KeypointIdType>> human_segments;
         TimestampType interval_time_bound = initial_time + time_interval*(i+1);
         while (idx < collisions.size() and collisions.at(idx).current_time() < interval_time_bound) {
-            if (collisions.at(idx).human_segment_id() == human_segment_to_focus and
-                collisions.at(idx).robot_segment_id() == robot_segment_to_focus) {
+            if (collisions.at(idx).human_segment() == human_segment_to_focus and
+                    collisions.at(idx).robot_segment() == robot_segment_to_focus) {
                 CONCLOG_PRINTLN("segment processed with segment_distance " << collisions.at(idx).collision_distance())
                 auto const& c = collisions.at(idx);
                 lower_bound = std::min(lower_bound,static_cast<FloatType>(c.collision_distance().lower())/1e9);
                 upper_bound = std::max(upper_bound,static_cast<FloatType>(c.collision_distance().upper())/1e9);
-                human_segments.insert(c.human_segment_id());
+                human_segments.insert(c.human_segment());
             }
             ++idx;
         }

@@ -39,24 +39,22 @@
 
 using namespace Opera;
 
-void process(BrokerAccess const& access, String const& scenario_t, String const& scenario_k, SizeType const& speedup, SizeType const& concurrency, LookAheadJobFactory const& job_factory) {
+void process(Pair<BrokerAccess,BodyPresentationTopic> const& bp_access, Pair<BrokerAccess,HumanStateTopic> const& hs_access,
+             Pair<BrokerAccess,RobotStateTopic> const& rs_access, Pair<BrokerAccess,CollisionNotificationTopic> const& cn_access,
+             String const& scenario_t, String const& scenario_k, SizeType const& speedup, SizeType const& concurrency, LookAheadJobFactory const& job_factory) {
 
     BodyPresentationMessage rp = Deserialiser<BodyPresentationMessage>(ScenarioResources::path(scenario_t+"/robot/presentation.json")).make();
     BodyPresentationMessage hp = Deserialiser<BodyPresentationMessage>(ScenarioResources::path(scenario_t+"/human/presentation.json")).make();
 
-    MemoryBrokerAccess presentation_memory_access;
-    Runtime runtime({presentation_memory_access,BodyPresentationTopic::DEFAULT},
-                    {access,HumanStateTopic::DEFAULT},
-                    {access,RobotStateTopic::DEFAULT},
-                    {access,{"opera_data_collision_prediction"}},
-                    job_factory, concurrency);
+    Runtime runtime(bp_access, hs_access, rs_access, cn_access, job_factory, concurrency*speedup);
 
     List<CollisionNotificationMessage> collisions;
-    auto* cn_subscriber = access.make_collision_notification_subscriber([&](auto p){
-        collisions.push_back(p);
-    },{"opera_data_collision_prediction"});
 
-    auto bp_publisher = presentation_memory_access.make_body_presentation_publisher();
+    auto* cn_subscriber = cn_access.first.make_collision_notification_subscriber([&](auto p){
+        collisions.push_back(p);
+    },cn_access.second);
+
+    auto bp_publisher = bp_access.first.make_body_presentation_publisher(bp_access.second);
     std::this_thread::sleep_for(std::chrono::milliseconds (1000));
     bp_publisher->put(rp);
     bp_publisher->put(hp);
@@ -66,7 +64,7 @@ void process(BrokerAccess const& access, String const& scenario_t, String const&
     auto first_human_state = Deserialiser<HumanStateMessage>(ScenarioResources::path(scenario_t+"/human/"+scenario_k+"/0.json")).make();
     auto sync_timestamp = first_human_state.timestamp();
 
-    auto rs_publisher = access.make_robot_state_publisher();
+    auto rs_publisher = rs_access.first.make_robot_state_publisher(rs_access.second);
     SizeType idx = 0;
     while (true) {
         auto filepath = ScenarioResources::path(scenario_t+"/robot/"+scenario_k+"/"+std::to_string(idx++)+".json");
@@ -101,7 +99,7 @@ void process(BrokerAccess const& access, String const& scenario_t, String const&
     }
 
     Thread human_production([&]{
-        auto* publisher = access.make_human_state_publisher();
+        auto* publisher = hs_access.first.make_human_state_publisher(hs_access.second);
         while (not human_messages.empty()) {
             auto& p = human_messages.front();
             publisher->put(p);
@@ -112,7 +110,7 @@ void process(BrokerAccess const& access, String const& scenario_t, String const&
     },"hu_p");
 
     Thread robot_production([&]{
-        auto* publisher = access.make_robot_state_publisher();
+        auto* publisher = rs_access.first.make_robot_state_publisher(rs_access.second);
         while (not robot_messages.empty()) {
             auto& p = robot_messages.front();
             publisher->put(p);
@@ -133,7 +131,7 @@ void process(BrokerAccess const& access, String const& scenario_t, String const&
     for (SizeType i=0; i<collisions.size(); ++i)
         Serialiser<CollisionNotificationMessage>(collisions.at(i)).to_file("collisions/" +scenario_t + "/" + scenario_k + "/" + to_string(i) + ".json");
 
-    CONCLOG_PRINTLN("Saved all collisions to JSON files.")
+    CONCLOG_PRINTLN("Saved all collisions to JSON files." + scenario_k)
 }
 
 int main(int argc, const char* argv[])
@@ -142,13 +140,17 @@ int main(int argc, const char* argv[])
     Logger::instance().configuration().set_thread_name_printing_policy(ThreadNamePrintingPolicy::BEFORE);
     String const scenario_t = "static";
     String const scenario_k = "long_r";
-    SizeType const speedup = 10;
+    SizeType const speedup = 1;
     SizeType const concurrency = 16;
-    //BrokerAccess access = MemoryBrokerAccess();
-    BrokerAccess access = MqttBrokerAccess("localhost",1883);
-    //BrokerAccess access = KafkaBrokerAccess(0,"localhost",RdKafka::Topic::OFFSET_END);
+    BrokerAccess memory_access = MemoryBrokerAccess();
+    BrokerAccess mqtt_access = MqttBrokerAccess("localhost",1883);
+    BrokerAccess kafka_access = KafkaBrokerAccess(0,"localhost",RdKafka::Topic::OFFSET_END);
     //LookAheadJobFactory job_factory = DiscardLookAheadJobFactory();
     LookAheadJobFactory job_factory = ReuseLookAheadJobFactory(AddWhenDifferentMinimumDistanceBarrierSequenceUpdatePolicy(),ReuseEquivalence::STRONG);
 
-    process(access,scenario_t,scenario_k,speedup,concurrency,job_factory);
+    process({memory_access,BodyPresentationTopic::DEFAULT},
+            {kafka_access,HumanStateTopic::DEFAULT},
+            {mqtt_access,RobotStateTopic::DEFAULT},
+            {kafka_access,{"opera_data_collision_prediction"}},
+            scenario_t,scenario_k,speedup,concurrency,job_factory);
 }
