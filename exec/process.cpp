@@ -44,14 +44,19 @@ void process(BrokerAccess const& access, String const& scenario_t, String const&
     BodyPresentationMessage rp = Deserialiser<BodyPresentationMessage>(ScenarioResources::path(scenario_t+"/robot/presentation.json")).make();
     BodyPresentationMessage hp = Deserialiser<BodyPresentationMessage>(ScenarioResources::path(scenario_t+"/human/presentation.json")).make();
 
-    Runtime runtime(access, job_factory, concurrency);
+    MemoryBrokerAccess presentation_memory_access;
+    Runtime runtime({presentation_memory_access,BodyPresentationTopic::DEFAULT},
+                    {access,HumanStateTopic::DEFAULT},
+                    {access,RobotStateTopic::DEFAULT},
+                    {access,{"opera_data_collision_prediction"}},
+                    job_factory, concurrency);
 
     List<CollisionNotificationMessage> collisions;
     auto* cn_subscriber = access.make_collision_notification_subscriber([&](auto p){
         collisions.push_back(p);
-    });
+    },{"opera_data_collision_prediction"});
 
-    auto bp_publisher = access.make_body_presentation_publisher();
+    auto bp_publisher = presentation_memory_access.make_body_presentation_publisher();
     std::this_thread::sleep_for(std::chrono::milliseconds (1000));
     bp_publisher->put(rp);
     bp_publisher->put(hp);
@@ -137,11 +142,11 @@ int main(int argc, const char* argv[])
     Logger::instance().configuration().set_thread_name_printing_policy(ThreadNamePrintingPolicy::BEFORE);
     String const scenario_t = "static";
     String const scenario_k = "long_r";
-    SizeType const speedup = 1;
+    SizeType const speedup = 10;
     SizeType const concurrency = 16;
     //BrokerAccess access = MemoryBrokerAccess();
-    //BrokerAccess access = MqttBrokerAccess("localhost",1883);
-    BrokerAccess access = KafkaBrokerAccess(0,"localhost",RdKafka::Topic::OFFSET_END);
+    BrokerAccess access = MqttBrokerAccess("localhost",1883);
+    //BrokerAccess access = KafkaBrokerAccess(0,"localhost",RdKafka::Topic::OFFSET_END);
     //LookAheadJobFactory job_factory = DiscardLookAheadJobFactory();
     LookAheadJobFactory job_factory = ReuseLookAheadJobFactory(AddWhenDifferentMinimumDistanceBarrierSequenceUpdatePolicy(),ReuseEquivalence::STRONG);
 
