@@ -144,13 +144,13 @@ int main(int argc, const char* argv[])
     SizeType const concurrency = 16;
     BrokerAccess memory_access = MemoryBrokerAccess();
     BrokerAccess mqtt_access = MqttBrokerAccess("localhost",1883);
-    BrokerAccess kafka_access = KafkaBrokerAccess(0,"localhost",RdKafka::Topic::OFFSET_END);
+    BrokerAccess kafka_access = KafkaBrokerAccess(0,"sulky-01.srvs.cloudkafka.com:9094,sulky-02.srvs.cloudkafka.com:9094,sulky-03.srvs.cloudkafka.com:9094",RdKafka::Topic::OFFSET_END);
     //LookAheadJobFactory job_factory = DiscardLookAheadJobFactory();
     LookAheadJobFactory job_factory = ReuseLookAheadJobFactory(AddWhenDifferentMinimumDistanceBarrierSequenceUpdatePolicy(),ReuseEquivalence::STRONG);
 
     process({memory_access,BodyPresentationTopic::DEFAULT},
-            {kafka_access,HumanStateTopic::DEFAULT},
+            {kafka_access,{"aauk5nv3-opera_human_state"}},
             {mqtt_access,RobotStateTopic::DEFAULT},
-            {kafka_access,{"opera_data_collision_prediction"}},
+            {kafka_access,{"aauk5nv3-opera_data_collision_prediction"}},
             scenario_t,scenario_k,speedup,concurrency,job_factory);
 }
