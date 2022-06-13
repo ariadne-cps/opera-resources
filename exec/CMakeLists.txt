@@ -2,6 +2,7 @@ set(EXECS
         input_check
         input_plot
         process
+        ice_demo
         output_plot
         compared_check
     )

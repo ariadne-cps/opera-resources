@@ -143,14 +143,17 @@ int main(int argc, const char* argv[])
     SizeType const speedup = 1;
     SizeType const concurrency = 16;
     BrokerAccess memory_access = MemoryBrokerAccess();
-    BrokerAccess mqtt_access = MqttBrokerAccess("localhost",1883);
-    BrokerAccess kafka_access = KafkaBrokerAccess(0,"sulky-01.srvs.cloudkafka.com:9094,sulky-02.srvs.cloudkafka.com:9094,sulky-03.srvs.cloudkafka.com:9094",RdKafka::Topic::OFFSET_END);
-    //LookAheadJobFactory job_factory = DiscardLookAheadJobFactory();
+    BrokerAccess mqtt_access = MqttBrokerAccess(Environment::get("MQTT_BROKER_URI"), atoi(Environment::get("MQTT_BROKER_PORT")));
+    BrokerAccess kafka_access = KafkaBrokerAccessBuilder(Environment::get("KAFKA_BROKER_URI"))
+            .set_sasl_mechanism(Environment::get("KAFKA_SASL_MECHANISM"))
+            .set_security_protocol(Environment::get("KAFKA_SECURITY_PROTOCOL"))
+            .set_sasl_username(Environment::get("KAFKA_USERNAME"))
+            .set_sasl_password(Environment::get("KAFKA_PASSWORD"))
+            .build();
     LookAheadJobFactory job_factory = ReuseLookAheadJobFactory(AddWhenDifferentMinimumDistanceBarrierSequenceUpdatePolicy(),ReuseEquivalence::STRONG);
-
     process({memory_access,BodyPresentationTopic::DEFAULT},
-            {kafka_access,{"aauk5nv3-opera_human_state"}},
+            {kafka_access,{std::string(Environment::get("KAFKA_TOPIC_PREFIX"))+HumanStateTopic::DEFAULT}},
             {mqtt_access,RobotStateTopic::DEFAULT},
-            {kafka_access,{"aauk5nv3-opera_data_collision_prediction"}},
+            {kafka_access,{std::string(Environment::get("KAFKA_TOPIC_PREFIX"))+CollisionNotificationTopic::DEFAULT}},
             scenario_t,scenario_k,speedup,concurrency,job_factory);
 }
