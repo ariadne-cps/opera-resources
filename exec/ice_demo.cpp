@@ -62,11 +62,8 @@ int main(int argc, const char* argv[])
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
     BodyPresentationMessage rp = Deserialiser<BodyPresentationMessage>(ScenarioResources::path("ice/robot.json")).make();
-    BodyPresentationMessage hp = Deserialiser<BodyPresentationMessage>(ScenarioResources::path("ice/human.json")).make();
-
     auto* presentation_publisher = memory_access.make_body_presentation_publisher();
     presentation_publisher->put(rp);
-    presentation_publisher->put(hp);
 
     std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::hours(std::numeric_limits<int>::max()));
 }
