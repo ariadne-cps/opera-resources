@@ -52,7 +52,8 @@ int main(int argc, const char* argv[])
             .set_sasl_username(Environment::get("KAFKA_USERNAME"))
             .set_sasl_password(Environment::get("KAFKA_PASSWORD"))
             .build();
-    LookAheadJobFactory job_factory = ReuseLookAheadJobFactory(AddWhenDifferentMinimumDistanceBarrierSequenceUpdatePolicy(),ReuseEquivalence::STRONG);
+    LookAheadJobFactory job_factory = DiscardLookAheadJobFactory();
+    //LookAheadJobFactory job_factory = ReuseLookAheadJobFactory(AddWhenDifferentMinimumDistanceBarrierSequenceUpdatePolicy(),ReuseEquivalence::STRONG);
     SizeType concurrency = std::thread::hardware_concurrency();
     Runtime runtime({memory_access,BodyPresentationTopic::DEFAULT},
                     {kafka_access,{"opera_data_human_pose_aggregator"}},
