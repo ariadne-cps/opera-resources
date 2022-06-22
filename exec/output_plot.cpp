@@ -80,8 +80,8 @@ void aggregate_collision_packets(String const& scenario_t, String const& scenari
                     collisions.at(idx).robot_segment() == robot_segment_to_focus) {
                 CONCLOG_PRINTLN("segment processed with segment_distance " << collisions.at(idx).collision_distance())
                 auto const& c = collisions.at(idx);
-                lower_bound = std::min(lower_bound,static_cast<FloatType>(c.collision_distance().lower())/1e9);
-                upper_bound = std::max(upper_bound,static_cast<FloatType>(c.collision_distance().upper())/1e9);
+                lower_bound = std::min(lower_bound,static_cast<FloatType>(c.collision_distance().lower())/1e3);
+                upper_bound = std::max(upper_bound,static_cast<FloatType>(c.collision_distance().upper())/1e3);
                 human_segments.insert(c.human_segment());
             }
             ++idx;
@@ -103,7 +103,7 @@ void aggregate_collision_packets(String const& scenario_t, String const& scenari
     output << "x = [";
     for (auto const& tp : time_points) output << tp << " ";
     output << "];\n";
-    output << "x = (x - x(1))/1e9/60;\n";
+    output << "x = (x - x(1))/1e3/60;\n";
     output << "xlabel(\"T_s(min)\");\n";
     output << "ylabel(\"T_{pr}(sec)\");\n";
     output << "hold on;\n";
@@ -125,9 +125,9 @@ void aggregate_collision_packets(String const& scenario_t, String const& scenari
 int main(int argc, const char* argv[])
 {
     if (not CommandLineInterface::instance().acquire(argc,argv)) return -1;
-    String const scenario_t = "static";
-    String const scenario_k = "long_r";
-    Pair<KeypointIdType,KeypointIdType> const human_segment = {"right_wrist","right_wrist"};
+    String const scenario_t = "dynamic";
+    String const scenario_k = "input_good";
+    Pair<KeypointIdType,KeypointIdType> const human_segment = {"left_wrist","left_wrist"};
     Pair<KeypointIdType,KeypointIdType> const robot_segment = {"7","8"};
     aggregate_collision_packets(scenario_t,scenario_k,human_segment,robot_segment);
 }
