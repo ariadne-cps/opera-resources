@@ -47,8 +47,9 @@ void acquire_human_scenario_samples(String const& scenario_t, String const& scen
     OPERA_ASSERT_EQUAL(human.num_points(),16)
     SizeType file = 0;
     List<HumanStateMessage> human_messages;
+    CONCLOG_PRINTLN("Acquiring files")
     while (true) {
-        CONCLOG_PRINTLN("Acquiring file for message " << file)
+        CONCLOG_PRINTLN_AT(1,"File " << file)
         auto filepath = ScenarioResources::path(scenario_t+"/human/"+scenario_k+"/" + std::to_string(file++) + ".json");
         if (not exists(filepath)) break;
         auto deserialiser = Deserialiser<HumanStateMessage>(filepath);
@@ -56,9 +57,11 @@ void acquire_human_scenario_samples(String const& scenario_t, String const& scen
     }
 
     List<HumanStateInstance> instances;
-    for (auto pkt: human_messages) {
-        CONCLOG_PRINTLN("Creating instance for message " << instances.size())
-        instances.emplace_back(human, pkt.bodies().at(0).second, pkt.timestamp());
+    CONCLOG_PRINTLN("Creating instances")
+    for (auto const& pkt: human_messages) {
+        CONCLOG_PRINTLN_AT(1,"Instance " << instances.size() << " with " << pkt.bodies().size() << " bodies")
+        for (auto const& bd : pkt.bodies())
+            instances.emplace_back(human, bd.second, pkt.timestamp());
     }
 }
 
@@ -72,7 +75,7 @@ void acquire_robot_scenario_samples(String const& scenario_t, String const& scen
     RobotStateHistory history(robot);
     TimestampType current_timestamp = 0;
     while (true) {
-        CONCLOG_PRINTLN_VAR(file)
+        CONCLOG_PRINTLN_AT(1, "File " << file)
         auto filepath = ScenarioResources::path(scenario_t+"/robot/"+scenario_k+"/"+std::to_string(file++)+".json");
         if (not exists(filepath)) break;
         auto pkt = Deserialiser<RobotStateMessage>(filepath).make();
@@ -88,10 +91,10 @@ void acquire_robot_scenario_samples(String const& scenario_t, String const& scen
 int main(int argc, const char* argv[])
 {
     if (not CommandLineInterface::instance().acquire(argc,argv)) return -1;
-    String const scenario_t = "static";
-    String const scenario_k = "long_r";
-    CONCLOG_PRINTLN("Acquiring human scenario samples")
+    String const scenario_t = "dynamic";
+    String const scenario_k = "input_good";
+    CONCLOG_PRINTLN("Checking human scenario samples")
     acquire_human_scenario_samples(scenario_t,scenario_k);
-    CONCLOG_PRINTLN("Acquiring robot scenario samples")
+    CONCLOG_PRINTLN("Checking robot scenario samples")
     acquire_robot_scenario_samples(scenario_t,scenario_k);
 }
