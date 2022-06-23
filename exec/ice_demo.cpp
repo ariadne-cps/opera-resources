@@ -66,5 +66,19 @@ int main(int argc, const char* argv[])
     auto* presentation_publisher = memory_access.make_body_presentation_publisher();
     presentation_publisher->put(rp);
 
+    SizeType num_human_messages = 0;
+    auto* human_subscriber = kafka_access.make_human_state_subscriber([&](auto const& p){
+        Serialiser<HumanStateMessage>(p).to_file("input/human/" + to_string(num_human_messages) + ".json");
+        ++num_human_messages;
+    },{"opera_data_human_pose_aggregator"});
+
+    SizeType num_robot_messages = 0;
+    auto* robot_subscriber = mqtt_access.make_robot_state_subscriber([&](auto const& p){
+        Serialiser<RobotStateMessage>(p).to_file("input/robot/" + to_string(num_robot_messages) + ".json");
+        ++num_robot_messages;
+    },{"ice_cell4_lbr_iiwa_arm"});
+
     std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::hours(std::numeric_limits<int>::max()));
+    delete human_subscriber;
+    delete robot_subscriber;
 }

@@ -126,7 +126,7 @@ int main(int argc, const char* argv[])
 {
     if (not CommandLineInterface::instance().acquire(argc,argv)) return -1;
     String const scenario_t = "dynamic";
-    String const scenario_k = "input_good";
+    String const scenario_k = "input_bad";
     Pair<KeypointIdType,KeypointIdType> const human_segment = {"left_wrist","left_wrist"};
     Pair<KeypointIdType,KeypointIdType> const robot_segment = {"7","8"};
     aggregate_collision_packets(scenario_t,scenario_k,human_segment,robot_segment);

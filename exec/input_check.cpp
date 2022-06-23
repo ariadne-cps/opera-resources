@@ -92,7 +92,7 @@ int main(int argc, const char* argv[])
 {
     if (not CommandLineInterface::instance().acquire(argc,argv)) return -1;
     String const scenario_t = "dynamic";
-    String const scenario_k = "input_good";
+    String const scenario_k = "bad1";
     CONCLOG_PRINTLN("Checking human scenario samples")
     acquire_human_scenario_samples(scenario_t,scenario_k);
     CONCLOG_PRINTLN("Checking robot scenario samples")

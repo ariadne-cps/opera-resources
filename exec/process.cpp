@@ -129,17 +129,17 @@ void process(Pair<BrokerAccess,BodyPresentationTopic> const& bp_access, Pair<Bro
     delete cn_subscriber;
 
     for (SizeType i=0; i<collisions.size(); ++i)
-        Serialiser<CollisionNotificationMessage>(collisions.at(i)).to_file("collisions/" +scenario_t + "/" + scenario_k + "/" + to_string(i) + ".json");
+        Serialiser<CollisionNotificationMessage>(collisions.at(i)).to_file("collisions/" + scenario_t + "/" + scenario_k + "/" + to_string(i) + ".json");
 
-    CONCLOG_PRINTLN("Saved all collisions to JSON files." + scenario_k)
+    CONCLOG_PRINTLN("Saved all collisions to JSON files in collisions/" + scenario_t + "/" + scenario_k + "/")
 }
 
 int main(int argc, const char* argv[])
 {
     if (not CommandLineInterface::instance().acquire(argc,argv)) return -1;
     Logger::instance().configuration().set_thread_name_printing_policy(ThreadNamePrintingPolicy::BEFORE);
-    String const scenario_t = "static";
-    String const scenario_k = "long_r";
+    String const scenario_t = "dynamic";
+    String const scenario_k = "bad1";
     SizeType const speedup = 1;
     SizeType const concurrency = 16;
     BrokerAccess memory_access = MemoryBrokerAccess();
@@ -152,8 +152,8 @@ int main(int argc, const char* argv[])
             .build();
     LookAheadJobFactory job_factory = ReuseLookAheadJobFactory(AddWhenDifferentMinimumDistanceBarrierSequenceUpdatePolicy(),ReuseEquivalence::STRONG);
     process({memory_access,BodyPresentationTopic::DEFAULT},
-            {kafka_access,{std::string(Environment::get("KAFKA_TOPIC_PREFIX"))+HumanStateTopic::DEFAULT}},
-            {mqtt_access,RobotStateTopic::DEFAULT},
-            {kafka_access,{std::string(Environment::get("KAFKA_TOPIC_PREFIX"))+CollisionNotificationTopic::DEFAULT}},
+            {memory_access,HumanStateTopic::DEFAULT},
+            {memory_access,RobotStateTopic::DEFAULT},
+            {kafka_access,{"opera_data_collision_prediction"}},
             scenario_t,scenario_k,speedup,concurrency,job_factory);
 }
