@@ -48,18 +48,24 @@ void acquire_human_scenario_samples(String const& scenario_t, String const& scen
     SizeType file = 0;
     List<HumanStateMessage> human_messages;
     CONCLOG_PRINTLN("Acquiring files")
+    TimestampType current_timestamp = 0;
     while (true) {
         CONCLOG_PRINTLN_AT(1,"File " << file)
         auto filepath = ScenarioResources::path(scenario_t+"/human/"+scenario_k+"/" + std::to_string(file++) + ".json");
         if (not exists(filepath)) break;
         auto deserialiser = Deserialiser<HumanStateMessage>(filepath);
-        human_messages.push_back(deserialiser.make());
+        auto pkt = deserialiser.make();
+        if (pkt.timestamp() <= current_timestamp) {
+            CONCLOG_PRINTLN_AT(1,"The timestamp should be strictly increasing along messages! (" << pkt.timestamp() << " vs " << current_timestamp << ")")
+        }
+        current_timestamp = pkt.timestamp();
+        human_messages.push_back(pkt);
     }
 
     List<HumanStateInstance> instances;
     CONCLOG_PRINTLN("Creating instances")
     for (auto const& pkt: human_messages) {
-        CONCLOG_PRINTLN_AT(1,"Instance " << instances.size() << " with " << pkt.bodies().size() << " bodies")
+        CONCLOG_PRINTLN_AT(1,"Instance " << instances.size() << " with " << pkt.bodies().size() << " bodies at " << pkt.timestamp())
         for (auto const& bd : pkt.bodies())
             instances.emplace_back(human, bd.second, pkt.timestamp());
     }
@@ -79,7 +85,7 @@ void acquire_robot_scenario_samples(String const& scenario_t, String const& scen
         auto filepath = ScenarioResources::path(scenario_t+"/robot/"+scenario_k+"/"+std::to_string(file++)+".json");
         if (not exists(filepath)) break;
         auto pkt = Deserialiser<RobotStateMessage>(filepath).make();
-        OPERA_ASSERT(pkt.timestamp() > current_timestamp)
+        OPERA_ASSERT_MSG(pkt.timestamp() > current_timestamp,"The timestamp should be strictly increasing along messages! (" << pkt.timestamp() << " vs " << current_timestamp)
         current_timestamp = pkt.timestamp();
         Map<KeypointIdType,List<Point>> points;
         for (SizeType i=0;i<robot.num_points();++i)
@@ -92,7 +98,7 @@ int main(int argc, const char* argv[])
 {
     if (not CommandLineInterface::instance().acquire(argc,argv)) return -1;
     String const scenario_t = "dynamic";
-    String const scenario_k = "bad1";
+    String const scenario_k = "bad2";
     CONCLOG_PRINTLN("Checking human scenario samples")
     acquire_human_scenario_samples(scenario_t,scenario_k);
     CONCLOG_PRINTLN("Checking robot scenario samples")

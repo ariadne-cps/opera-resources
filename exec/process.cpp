@@ -79,9 +79,9 @@ void process(Pair<BrokerAccess,BodyPresentationTopic> const& bp_access, Pair<Bro
     std::this_thread::sleep_for(std::chrono::milliseconds (1000));
     delete rs_publisher;
 
-    CONCLOG_PRINTLN("Robot messages inserted up to sync timestamp of " << sync_timestamp << " at message #" << idx)
-
     std::this_thread::sleep_for(std::chrono::milliseconds (10));
+
+    CONCLOG_PRINTLN("Robot messages inserted up to sync timestamp of " << sync_timestamp << " at message #" << idx)
 
     std::deque<RobotStateMessage> robot_messages;
     while (true) {
@@ -92,31 +92,50 @@ void process(Pair<BrokerAccess,BodyPresentationTopic> const& bp_access, Pair<Bro
 
     std::deque<HumanStateMessage> human_messages;
     SizeType human_idx = 0;
+    TimestampType latest_timestamp = 0;
     while (true) {
         auto filepath = ScenarioResources::path(scenario_t+"/human/"+scenario_k+"/"+std::to_string(human_idx++)+".json");
         if (not exists(filepath)) break;
-        human_messages.push_back(Deserialiser<HumanStateMessage>(filepath).make());
+        auto msg = Deserialiser<HumanStateMessage>(filepath).make();
+        if (msg.timestamp() > latest_timestamp) {
+            human_messages.push_back(msg);
+            latest_timestamp = msg.timestamp();
+        }
     }
 
     Thread human_production([&]{
+        CONCLOG_SCOPE_CREATE
+        auto initial_timestamp = static_cast<unsigned long long>(duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
         auto* publisher = hs_access.first.make_human_state_publisher(hs_access.second);
         while (not human_messages.empty()) {
             auto& p = human_messages.front();
-            publisher->put(p);
-            human_messages.pop_front();
-            std::this_thread::sleep_for(std::chrono::microseconds(66667/speedup));
+            auto current_timestamp = static_cast<unsigned long long>(duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+            if (p.timestamp()-sync_timestamp <= (current_timestamp-initial_timestamp)*speedup) {
+                publisher->put(p);
+                human_messages.pop_front();
+                CONCLOG_PRINTLN("Sending human message with timestamp " << p.timestamp() << " at " << current_timestamp)
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
+        CONCLOG_PRINTLN("Human messages completed")
         delete publisher;
     },"hu_p");
 
     Thread robot_production([&]{
+        CONCLOG_SCOPE_CREATE
+        auto initial_timestamp = static_cast<unsigned long long>(duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
         auto* publisher = rs_access.first.make_robot_state_publisher(rs_access.second);
         while (not robot_messages.empty()) {
             auto& p = robot_messages.front();
-            publisher->put(p);
-            robot_messages.pop_front();
-            std::this_thread::sleep_for(std::chrono::microseconds(50000/speedup));
+            auto current_timestamp = static_cast<unsigned long long>(duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+            if (p.timestamp()-sync_timestamp <= (current_timestamp-initial_timestamp)*speedup) {
+                publisher->put(p);
+                robot_messages.pop_front();
+                CONCLOG_PRINTLN("Sending robot message with timestamp " << p.timestamp() << " at " << current_timestamp)
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
+        CONCLOG_PRINTLN("Robot messages completed")
         delete publisher;
     },"rb_p");
 
@@ -139,7 +158,7 @@ int main(int argc, const char* argv[])
     if (not CommandLineInterface::instance().acquire(argc,argv)) return -1;
     Logger::instance().configuration().set_thread_name_printing_policy(ThreadNamePrintingPolicy::BEFORE);
     String const scenario_t = "dynamic";
-    String const scenario_k = "bad1";
+    String const scenario_k = "bad2";
     SizeType const speedup = 1;
     SizeType const concurrency = 16;
     BrokerAccess memory_access = MemoryBrokerAccess();
@@ -154,6 +173,6 @@ int main(int argc, const char* argv[])
     process({memory_access,BodyPresentationTopic::DEFAULT},
             {memory_access,HumanStateTopic::DEFAULT},
             {memory_access,RobotStateTopic::DEFAULT},
-            {kafka_access,{"opera_data_collision_prediction"}},
+            {memory_access,{"opera_data_collision_prediction"}},
             scenario_t,scenario_k,speedup,concurrency,job_factory);
 }
