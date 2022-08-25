@@ -56,7 +56,7 @@ void acquire_human_scenario_samples(String const& scenario_t, String const& scen
         auto deserialiser = Deserialiser<HumanStateMessage>(filepath);
         auto pkt = deserialiser.make();
         if (pkt.timestamp() <= current_timestamp) {
-            CONCLOG_PRINTLN_AT(1,"The timestamp should be strictly increasing along messages! (" << pkt.timestamp() << " vs " << current_timestamp << ")")
+            CONCLOG_PRINTLN("File " << file-1 << ": the timestamp should be strictly increasing along messages! (" << pkt.timestamp() << " vs " << current_timestamp << ")")
         }
         current_timestamp = pkt.timestamp();
         human_messages.push_back(pkt);
