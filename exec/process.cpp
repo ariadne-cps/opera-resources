@@ -57,7 +57,7 @@ void process(Pair<BrokerAccess,BodyPresentationTopic> const& bp_access, Pair<Bro
     auto bp_publisher = bp_access.first.make_body_presentation_publisher(bp_access.second);
     std::this_thread::sleep_for(std::chrono::milliseconds (1000));
     bp_publisher->put(rp);
-    bp_publisher->put(hp);
+    //bp_publisher->put(hp);
     std::this_thread::sleep_for(std::chrono::milliseconds (1000));
     delete bp_publisher;
 
@@ -158,7 +158,7 @@ int main(int argc, const char* argv[])
     if (not CommandLineInterface::instance().acquire(argc,argv)) return -1;
     Logger::instance().configuration().set_thread_name_printing_policy(ThreadNamePrintingPolicy::BEFORE);
     String const scenario_t = "dynamic";
-    String const scenario_k = "bad2";
+    String const scenario_k = "bad1";
     SizeType const speedup = 1;
     SizeType const concurrency = 16;
     BrokerAccess memory_access = MemoryBrokerAccess();
@@ -169,9 +169,10 @@ int main(int argc, const char* argv[])
             .set_sasl_username(Environment::get("KAFKA_USERNAME"))
             .set_sasl_password(Environment::get("KAFKA_PASSWORD"))
             .build();
-    LookAheadJobFactory job_factory = ReuseLookAheadJobFactory(AddWhenDifferentMinimumDistanceBarrierSequenceUpdatePolicy(),ReuseEquivalence::STRONG);
+    //LookAheadJobFactory job_factory = ReuseLookAheadJobFactory(AddWhenDifferentMinimumDistanceBarrierSequenceUpdatePolicy(),ReuseEquivalence::STRONG);
+    LookAheadJobFactory job_factory = DiscardLookAheadJobFactory();
     process({memory_access,BodyPresentationTopic::DEFAULT},
-            {memory_access,HumanStateTopic::DEFAULT},
+            {kafka_access,std::string(Environment::get("KAFKA_TOPIC_PREFIX"))+"opera_human_state"},
             {memory_access,RobotStateTopic::DEFAULT},
             {memory_access,{"opera_data_collision_prediction"}},
             scenario_t,scenario_k,speedup,concurrency,job_factory);

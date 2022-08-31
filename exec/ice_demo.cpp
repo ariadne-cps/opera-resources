@@ -52,8 +52,8 @@ int main(int argc, const char* argv[])
             .set_sasl_username(Environment::get("KAFKA_USERNAME"))
             .set_sasl_password(Environment::get("KAFKA_PASSWORD"))
             .build();
-    LookAheadJobFactory job_factory = DiscardLookAheadJobFactory();
-    //LookAheadJobFactory job_factory = ReuseLookAheadJobFactory(AddWhenDifferentMinimumDistanceBarrierSequenceUpdatePolicy(),ReuseEquivalence::STRONG);
+    //LookAheadJobFactory job_factory = DiscardLookAheadJobFactory();
+    LookAheadJobFactory job_factory = ReuseLookAheadJobFactory(AddWhenDifferentMinimumDistanceBarrierSequenceUpdatePolicy(),ReuseEquivalence::STRONG);
     SizeType concurrency = std::thread::hardware_concurrency();
     Runtime runtime({memory_access,BodyPresentationTopic::DEFAULT},
                     {kafka_access,{"opera_data_human_pose_aggregator"}},
@@ -65,6 +65,7 @@ int main(int argc, const char* argv[])
     BodyPresentationMessage rp = Deserialiser<BodyPresentationMessage>(ScenarioResources::path("ice/robot.json")).make();
     auto* presentation_publisher = memory_access.make_body_presentation_publisher();
     presentation_publisher->put(rp);
+
 
     SizeType num_human_messages = 0;
     auto* human_subscriber = kafka_access.make_human_state_subscriber([&](auto const& p){
@@ -78,7 +79,13 @@ int main(int argc, const char* argv[])
         ++num_robot_messages;
     },{"ice_cell4_lbr_iiwa_arm"});
 
+    auto* collision_notification_subscriber = kafka_access.make_collision_notification_subscriber([&](auto const& p){
+        auto current_timestamp = static_cast<unsigned long long>(duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+        CONCLOG_PRINTLN(current_timestamp << ": collision detected for " << p.human_segment().first << "-" << p.human_segment().second << " at " << p.current_time() << " (delta = " << current_timestamp-p.current_time() << ")")
+    },{"opera_data_collision_prediction"});
+
     std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::hours(std::numeric_limits<int>::max()));
     delete human_subscriber;
     delete robot_subscriber;
+    delete collision_notification_subscriber;
 }
