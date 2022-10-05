@@ -45,7 +45,7 @@ endif()
 
 set(SCENARIO_RESOURCES_PATH ${PROJECT_SOURCE_DIR}/json/)
 configure_file(${PROJECT_SOURCE_DIR}/include/scenarios_config.hpp.cmake ${PROJECT_SOURCE_DIR}/include/scenarios_config.hpp)
-
+message(STATUS "rapidjson include: ${RAPIDJSON_INCLUDEDIR}")
 include_directories(SYSTEM ${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR}/opera/include ${PROJECT_SOURCE_DIR}/opera/dependencies ${mqtt_INCLUDE_DIR} ${RAPIDJSON_INCLUDEDIR}) 
 
 add_subdirectory(opera)
