@@ -39,6 +39,8 @@
 
 using namespace Opera;
 
+const unsigned long int TOO_LARGE_A_TIMESTAMP = 16619348306330;
+
 void process(Pair<BrokerAccess,BodyPresentationTopic> const& bp_access, Pair<BrokerAccess,HumanStateTopic> const& hs_access,
              Pair<BrokerAccess,RobotStateTopic> const& rs_access, Pair<BrokerAccess,CollisionNotificationTopic> const& cn_access,
              String const& scenario_t, String const& scenario_k, SizeType const& speedup, SizeType const& concurrency, LookAheadJobFactory const& job_factory) {
@@ -97,7 +99,7 @@ void process(Pair<BrokerAccess,BodyPresentationTopic> const& bp_access, Pair<Bro
         auto filepath = ScenarioResources::path(scenario_t+"/human/"+scenario_k+"/"+std::to_string(human_idx++)+".json");
         if (not exists(filepath)) break;
         auto msg = Deserialiser<HumanStateMessage>(filepath).make();
-        if (msg.timestamp() > latest_timestamp) {
+        if (msg.timestamp() < TOO_LARGE_A_TIMESTAMP and msg.timestamp() > latest_timestamp) {
             human_messages.push_back(msg);
             latest_timestamp = msg.timestamp();
         }
@@ -115,7 +117,7 @@ void process(Pair<BrokerAccess,BodyPresentationTopic> const& bp_access, Pair<Bro
                 human_messages.pop_front();
                 CONCLOG_PRINTLN("Sending human message with timestamp " << p.timestamp() << " at " << current_timestamp)
             }
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
         CONCLOG_PRINTLN("Human messages completed")
         delete publisher;
@@ -169,11 +171,11 @@ int main(int argc, const char* argv[])
             .set_sasl_username(Environment::get("KAFKA_USERNAME"))
             .set_sasl_password(Environment::get("KAFKA_PASSWORD"))
             .build();
-    //LookAheadJobFactory job_factory = ReuseLookAheadJobFactory(AddWhenDifferentMinimumDistanceBarrierSequenceUpdatePolicy(),ReuseEquivalence::STRONG);
-    LookAheadJobFactory job_factory = DiscardLookAheadJobFactory();
+    LookAheadJobFactory job_factory = ReuseLookAheadJobFactory(AddWhenDifferentMinimumDistanceBarrierSequenceUpdatePolicy(),ReuseEquivalence::STRONG);
+    //LookAheadJobFactory job_factory = DiscardLookAheadJobFactory();
     process({memory_access,BodyPresentationTopic::DEFAULT},
-            {kafka_access,std::string(Environment::get("KAFKA_TOPIC_PREFIX"))+"opera_human_state"},
+            {memory_access,HumanStateTopic::DEFAULT},
             {memory_access,RobotStateTopic::DEFAULT},
-            {memory_access,{"opera_data_collision_prediction"}},
+            {memory_access,CollisionNotificationTopic::DEFAULT},
             scenario_t,scenario_k,speedup,concurrency,job_factory);
 }
