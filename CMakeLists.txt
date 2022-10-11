@@ -43,11 +43,12 @@ else()
     add_compile_options(/WX)
 endif()
 
+add_subdirectory(opera)
+
 set(SCENARIO_RESOURCES_PATH ${PROJECT_SOURCE_DIR}/json/)
 configure_file(${PROJECT_SOURCE_DIR}/include/scenarios_config.hpp.cmake ${PROJECT_SOURCE_DIR}/include/scenarios_config.hpp)
 
-include_directories(SYSTEM ${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR}/opera/include ${PROJECT_SOURCE_DIR}/opera/dependencies ${mqtt_INCLUDE_DIR} ${RAPIDJSON_INCLUDEDIR}) 
+include_directories(SYSTEM ${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR}/opera/include ${PROJECT_SOURCE_DIR}/opera/dependencies ${mqtt_INCLUDE_DIR} ${RAPIDJSON_INCLUDEDIR})
 
-add_subdirectory(opera)
 add_subdirectory(exec)
 add_subdirectory(profile)
