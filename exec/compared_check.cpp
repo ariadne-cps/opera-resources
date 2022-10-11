@@ -104,6 +104,10 @@ class ScenarioCheck {
 
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
+            while(discard_runtime.num_waiting_jobs() > 0 or discard_runtime.__num_processing() > 0 or reuse_runtime.num_waiting_jobs() > 0 or reuse_runtime.__num_processing() > 0) {
+                std::this_thread::sleep_for(std::chrono::microseconds(10));
+            }
+
             OPERA_ASSERT_EQUAL(discard_runtime.__num_collisions(),reuse_runtime.__num_collisions())
             ++i;
             CONCLOG_SCOPE_PRINTHOLD("[" << indicator.symbol() << "] " << indicator.percentage() << "%");
@@ -117,8 +121,8 @@ class ScenarioCheck {
         LookAheadJobFactory discard_factory = DiscardLookAheadJobFactory();
         LookAheadJobFactory reuse_factory = ReuseLookAheadJobFactory(KeepOneMinimumDistanceBarrierSequenceUpdatePolicy(),ReuseEquivalence::STRONG);
 
-        CONCLOG_RUN_AT(2,Runtime discard_runtime(access,discard_factory))
-        CONCLOG_RUN_AT(2,Runtime reuse_runtime(access,reuse_factory))
+        CONCLOG_RUN_AT(2,Runtime discard_runtime(access,discard_factory,1))
+        CONCLOG_RUN_AT(2,Runtime reuse_runtime(access,reuse_factory,1))
 
         std::this_thread::sleep_for(std::chrono::milliseconds (10));
 
