@@ -52,11 +52,13 @@ int main(int argc, const char* argv[])
             .set_sasl_username(Environment::get("KAFKA_USERNAME"))
             .set_sasl_password(Environment::get("KAFKA_PASSWORD"))
             .build();
-    //LookAheadJobFactory job_factory = DiscardLookAheadJobFactory();
+    LookAheadJobFactory job_factory = DiscardLookAheadJobFactory();
+    RuntimeConfiguration configuration;
+    configuration.set_concurrency(4).set_job_factory(job_factory);
     Runtime runtime({memory_access,BodyPresentationTopic::DEFAULT},
                     {kafka_access,{"opera_data_human_pose_aggregator"}},
                     {mqtt_access, {"ice_cell4_lbr_iiwa_arm"}},
-                    {kafka_access,{"opera_data_collision_prediction"}});
+                    {kafka_access,{"opera_data_collision_prediction"}},configuration);
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
