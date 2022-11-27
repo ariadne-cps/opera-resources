@@ -43,12 +43,12 @@ const unsigned long int TOO_LARGE_A_TIMESTAMP = 16619348306330;
 
 void process(Pair<BrokerAccess,BodyPresentationTopic> const& bp_access, Pair<BrokerAccess,HumanStateTopic> const& hs_access,
              Pair<BrokerAccess,RobotStateTopic> const& rs_access, Pair<BrokerAccess,CollisionNotificationTopic> const& cn_access,
-             String const& scenario_t, String const& scenario_k, SizeType const& speedup, SizeType const& concurrency, LookAheadJobFactory const& job_factory) {
+             String const& scenario_t, String const& scenario_k, SizeType const& speedup, RuntimeConfiguration const& configuration) {
 
     BodyPresentationMessage rp = Deserialiser<BodyPresentationMessage>(ScenarioResources::path(scenario_t+"/robot/presentation.json")).make();
     BodyPresentationMessage hp = Deserialiser<BodyPresentationMessage>(ScenarioResources::path(scenario_t+"/human/presentation.json")).make();
 
-    Runtime runtime(bp_access, hs_access, rs_access, cn_access, job_factory, concurrency*speedup);
+    Runtime runtime(bp_access, hs_access, rs_access, cn_access, configuration);
 
     List<CollisionNotificationMessage> collisions;
 
@@ -162,7 +162,7 @@ int main(int argc, const char* argv[])
     String const scenario_t = "dynamic";
     String const scenario_k = "bad1";
     SizeType const speedup = 1;
-    SizeType const concurrency = 16;
+    SizeType const concurrency = 8;
     BrokerAccess memory_access = MemoryBrokerAccess();
     BrokerAccess mqtt_access = MqttBrokerAccess(Environment::get("MQTT_BROKER_URI"), atoi(Environment::get("MQTT_BROKER_PORT")));
     BrokerAccess kafka_access = KafkaBrokerAccessBuilder(Environment::get("KAFKA_BROKER_URI"))
@@ -171,11 +171,12 @@ int main(int argc, const char* argv[])
             .set_sasl_username(Environment::get("KAFKA_USERNAME"))
             .set_sasl_password(Environment::get("KAFKA_PASSWORD"))
             .build();
-    LookAheadJobFactory job_factory = ReuseLookAheadJobFactory(AddWhenDifferentMinimumDistanceBarrierSequenceUpdatePolicy(),ReuseEquivalence::STRONG);
     //LookAheadJobFactory job_factory = DiscardLookAheadJobFactory();
+    RuntimeConfiguration configuration;
+    configuration.set_concurrency(concurrency);
     process({memory_access,BodyPresentationTopic::DEFAULT},
             {memory_access,HumanStateTopic::DEFAULT},
             {memory_access,RobotStateTopic::DEFAULT},
             {memory_access,CollisionNotificationTopic::DEFAULT},
-            scenario_t,scenario_k,speedup,concurrency,job_factory);
+            scenario_t,scenario_k,speedup,configuration);
 }
